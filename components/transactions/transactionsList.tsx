@@ -1,5 +1,5 @@
 import { TouchableOpacity, View } from "react-native";
-import { Category, Transaction } from "../types";
+import { Category, Transaction } from "@/types";
 import TransactionListItem from "./transactionListItem";
 
 export default function TransactionList({

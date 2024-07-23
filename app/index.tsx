@@ -1,11 +1,12 @@
 import { StyleSheet, ScrollView, Platform } from "react-native";
 import { Category, Transaction } from "@/types";
 import { useSQLiteContext } from "expo-sqlite";
-import TransactionList from "@/components/transactionsList";
-import AddTransaction from "@/components/addTransaction";
-import TransactionSummary from "@/components/transactionSummary";
+import TransactionList from "@/components/transactions/transactionsList";
+import AddTransaction from "@/components/transactions/addTransaction";
+import TransactionSummary from "@/components/transactions/transactionSummary";
 import { TransactionsByMonth } from "@/types";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "expo-router";
 
 const App = () => {
   const [year, setYear] = useState<number>(2024);
@@ -21,20 +22,17 @@ const App = () => {
 
   const db = useSQLiteContext();
 
-  useEffect(() => {
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1;
+  useFocusEffect(
+    useCallback(() => {
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth() + 1;
 
-    setYear(currentYear);
-    setMonth(currentMonth);
-  }, []);
-
-  useEffect(() => {
-    async () => {
-      await getData();
-    };
-  }, [year, month]);
+      setYear(currentYear);
+      setMonth(currentMonth);
+      getData();
+    }, [])
+  );
 
   useEffect(() => {
     db.withTransactionAsync(async () => {
@@ -52,7 +50,7 @@ const App = () => {
 
   async function getData() {
     const { startDate, endDate } = getMonthStartEnd(year, month);
-    console.log(startDate, endDate);
+    console.log(startDate, endDate, "hello");
 
     const transactionsResult = await db.getAllAsync<Transaction>(
       `SELECT * from Transactions ORDER BY date DESC Limit 10;`
@@ -80,28 +78,10 @@ const App = () => {
   }
 
   async function deleteTransaction(id: number) {
-    db.withTransactionAsync(async () => {
+    /* db.withTransactionAsync(async () => {
       await db.runAsync(`DELETE FROM Transactions WHERE id = ?;`, [id]);
       await getData();
-    });
-  }
-
-  async function insertTransaction(transaction: Transaction) {
-    db.withTransactionAsync(async () => {
-      await db.runAsync(
-        `
-        INSERT INTO Transactions (category_id, amount, date, description, type) VALUES (?, ?, ?, ?, ?);
-      `,
-        [
-          transaction.category_id,
-          transaction.amount,
-          transaction.date,
-          transaction.description,
-          transaction.type,
-        ]
-      );
-      await getData();
-    });
+    }); */
   }
 
   return (
@@ -118,7 +98,7 @@ const App = () => {
           year={year}
           month={month}
         />
-        <AddTransaction insertTransaction={insertTransaction} />
+        <AddTransaction />
         <TransactionList
           categories={categories}
           transactions={transactions}

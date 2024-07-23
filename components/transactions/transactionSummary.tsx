@@ -1,6 +1,7 @@
 import { View, Text, TextStyle, StyleSheet } from "react-native";
-import Card from "./card";
+import Card from "../card";
 import { TransactionsByMonth } from "@/types";
+import { commaDelimited } from "@/utils/filters";
 
 interface TransactionSummaryProps extends TransactionsByMonth {
   month: number;
@@ -33,7 +34,8 @@ function TransactionSummary({
   });
 
   const formatMoney = (value: number) => {
-    const absValue = Math.abs(value).toFixed(2);
+    const absValue = commaDelimited(Math.abs(value));
+
     return `${value < 0 ? "-" : ""}$${absValue}`;
   };
 

@@ -4,7 +4,7 @@ import { categoryColors, categoryEmojies } from "@/constants";
 import { AutoSizeText, ResizeTextMode } from "react-native-auto-size-text";
 import { AntDesign } from "@expo/vector-icons";
 import { commaDelimited } from "@/utils/filters";
-import Card from "./card";
+import Card from "../card";
 import React from "react";
 
 interface TransactionListItemProps {

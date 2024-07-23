@@ -1,37 +1,77 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { Stack } from "expo-router";
+import { View, Text } from "react-native";
+import { SQLiteProvider } from "expo-sqlite";
+import "react-native-reanimated";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+import * as FileSystem from "expo-file-system";
+import { Asset } from "expo-asset";
+import React, { useState, useEffect } from "react";
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+const loadDatabase = async () => {
+  const dbName = "test.db";
+  const dbAsset = require("./../assets/test.db");
+  const dbUri = Asset.fromModule(dbAsset).uri;
+  const dbFilePath = `${FileSystem.documentDirectory}SQLite/${dbName}`;
+
+  try {
+    const fileInfo = await FileSystem.getInfoAsync(dbFilePath);
+
+    /*     if (fileInfo.exists) {
+      await FileSystem.deleteAsync(dbFilePath);
+    } */
+
+    if (!fileInfo.exists) {
+      await FileSystem.makeDirectoryAsync(
+        `${FileSystem.documentDirectory}SQLite/`,
+        { intermediates: true }
+      );
+      await FileSystem.downloadAsync(dbUri, dbFilePath);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+  const [dbLoaded, setDbLoaded] = useState<boolean>(false);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+    loadDatabase()
+      .then(() => {
+        setDbLoaded(true);
+        console.log("DB loaded");
+      })
+      .catch((e) => console.error(e));
+  }, []);
 
-  if (!loaded) {
-    return null;
-  }
+  if (!dbLoaded)
+    return (
+      <View style={{ flex: 1 }}>
+        <Text>Loading Database...</Text>
+      </View>
+    );
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-    </ThemeProvider>
+    <React.Suspense
+      fallback={
+        <View style={{ flex: 1 }}>
+          <Text>Loading Database...</Text>
+        </View>
+      }
+    >
+      <SQLiteProvider
+        databaseName="test.db"
+        useSuspense
+        assetSource={{ assetId: require("./../assets/test.db") }}
+      >
+        <Stack>
+          <Stack.Screen
+            name="index"
+            options={{ headerShown: true, headerTitle: "Budget Buddy" }}
+          />
+          <Stack.Screen name="transactions/[id]" />
+        </Stack>
+      </SQLiteProvider>
+    </React.Suspense>
   );
 }

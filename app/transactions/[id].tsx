@@ -1,4 +1,4 @@
-import { Button, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Button, Text, TextInput, View } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite/next";
 import { Category, Transaction } from "@/types";
@@ -7,23 +7,66 @@ import SegmentedControl from "@react-native-segmented-control/segmented-control"
 import CategoryButton from "@/components/categories/categoryButton";
 import React, { useEffect, useState } from "react";
 
+type TransactionWithOptionalIDAndStringAmount = Partial<
+  Pick<Transaction, "id">
+> &
+  Omit<Transaction, "id" | "amount"> & { amount: string };
+
 const TransactionPage = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [currentTab, setCurrentTab] = useState<number>(0);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [typeSelected, setTypeSelected] = useState<string>("");
-  const [amount, setAmount] = useState<string>("");
-  const [description, setDescription] = useState<string>("");
-  const [category, setCategory] = useState<string>("Expense");
-  const [categoryId, setCategoryId] = useState<number>(1);
+  const [currentTransaction, setCurrentTransaction] =
+    useState<TransactionWithOptionalIDAndStringAmount>({
+      category_id: 1,
+      amount: "",
+      date: new Date().getTime(),
+      description: "",
+      type: "Expense",
+    });
+
   const db = useSQLiteContext();
+
+  useEffect(() => {
+    if (id !== "null") {
+      getTransaction(Number(id));
+    }
+  }, []);
 
   useEffect(() => {
     getExpenseType(currentTab);
   }, [currentTab]);
 
+  const updateAmount = (amount: string) => {
+    setCurrentTransaction((prevTransaction) => ({
+      ...prevTransaction,
+      amount,
+    }));
+  };
+
+  const updateDescription = (description: string) => {
+    setCurrentTransaction((prevTransaction) => ({
+      ...prevTransaction,
+      description,
+    }));
+  };
+
+  const updateType = (type: "Expense" | "Income") => {
+    setCurrentTransaction((prevTransaction) => ({
+      ...prevTransaction,
+      type,
+    }));
+  };
+
+  const updateCategoryId = (id: number) => {
+    setCurrentTransaction((prevTransaction) => ({
+      ...prevTransaction,
+      category_id: id,
+    }));
+  };
+
   async function getExpenseType(currentTab: number) {
-    setCategory(currentTab === 0 ? "Expense" : "Income");
+    updateType(currentTab === 0 ? "Expense" : "Income");
     const type = currentTab === 0 ? "Expense" : "Income";
 
     const result = await db.getAllAsync<Category>(
@@ -33,42 +76,87 @@ const TransactionPage = () => {
     setCategories(result);
   }
 
-  async function insertTransaction(transaction: Transaction) {
+  async function getTransaction(id: number) {
+    const result = await db.getFirstAsync<Transaction>(
+      `SELECT * FROM Transactions WHERE id = ?;`,
+      [id]
+    );
+
+    if (result) {
+      updateAmount(result.amount.toString());
+      updateDescription(result.description);
+      updateCategoryId(result.category_id);
+      updateType(result.type);
+      if (result.type === "Income") {
+        setCurrentTab(1);
+      }
+    }
+  }
+
+  async function insertTransaction(
+    transaction: Omit<Transaction, "id">,
+    transactionId?: string
+  ) {
     db.withTransactionAsync(async () => {
-      await db.runAsync(
-        `
+      if (transactionId !== "null") {
+        // Update existing transaction
+        await db.runAsync(
+          `
+        UPDATE Transactions
+        SET category_id = ?, amount = ?, date = ?, description = ?, type = ?
+        WHERE id = ?;
+      `,
+          [
+            transaction.category_id,
+            transaction.amount,
+            transaction.date,
+            transaction.description,
+            transaction.type,
+            Number(transactionId),
+          ]
+        );
+      } else {
+        // Insert new transaction
+        await db.runAsync(
+          `
         INSERT INTO Transactions (category_id, amount, date, description, type) VALUES (?, ?, ?, ?, ?);
       `,
-        [
-          transaction.category_id,
-          transaction.amount,
-          transaction.date,
-          transaction.description,
-          transaction.type,
-        ]
-      );
+          [
+            transaction.category_id,
+            transaction.amount,
+            transaction.date,
+            transaction.description,
+            transaction.type,
+          ]
+        );
+      }
 
       router.back();
     });
   }
 
-  async function handleSave() {
-    console.log({
-      amount: Number(amount),
-      description,
-      category_id: categoryId,
-      date: new Date().getTime(),
-      type: category as "Expense" | "Income",
-    });
+  async function handleSave(transactionId?: string) {
+    console.log(
+      {
+        amount: Number(currentTransaction.amount),
+        description: currentTransaction.description,
+        category_id: currentTransaction.category_id,
+        date: new Date().getTime(),
+        type: currentTransaction.type as "Expense" | "Income",
+      },
+      transactionId
+    );
 
-    // @ts-ignore
-    await insertTransaction({
-      amount: Number(amount),
-      description,
-      category_id: categoryId,
-      date: new Date().getTime(),
-      type: category as "Expense" | "Income",
-    });
+    await insertTransaction(
+      {
+        amount: Number(currentTransaction.amount),
+        description: currentTransaction.description,
+        category_id: currentTransaction.category_id,
+        date: new Date().getTime(),
+        type: currentTransaction.type as "Expense" | "Income",
+      },
+      transactionId
+    );
   }
 
   return (
@@ -83,16 +171,18 @@ const TransactionPage = () => {
           placeholder="$Amount"
           style={{ fontSize: 32, marginBottom: 15, fontWeight: "bold" }}
           keyboardType="numeric"
+          value={currentTransaction.amount.toString()}
           onChangeText={(text) => {
             // Remove any non-numeric characters before setting the state
             const numericValue = text.replace(/[^0-9.]/g, "");
-            setAmount(numericValue);
+            updateAmount(numericValue);
           }}
         />
         <TextInput
           placeholder="Description"
           style={{ marginBottom: 15 }}
-          onChangeText={setDescription}
+          value={currentTransaction.description}
+          onChangeText={updateDescription}
         />
         <Text style={{ marginBottom: 6 }}>Select a entry type</Text>
         <SegmentedControl
@@ -109,9 +199,8 @@ const TransactionPage = () => {
             // @ts-ignore
             id={cat.id}
             title={cat.name}
-            isSelected={typeSelected === cat.name}
-            setTypeSelected={setTypeSelected}
-            setCategoryId={setCategoryId}
+            isSelected={currentTransaction.category_id === cat.id}
+            setCategoryId={updateCategoryId}
           />
         ))}
       </View>
@@ -123,7 +212,7 @@ const TransactionPage = () => {
         }}
       >
         <Button title="Cancel" color="red" onPress={router.back} />
-        <Button title="Save" onPress={handleSave} />
+        <Button title="Save" onPress={() => handleSave(id)} />
       </View>
     </View>
   );

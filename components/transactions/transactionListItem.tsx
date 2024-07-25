@@ -4,12 +4,15 @@ import { categoryColors, categoryEmojies } from "@/constants";
 import { AutoSizeText, ResizeTextMode } from "react-native-auto-size-text";
 import { AntDesign } from "@expo/vector-icons";
 import { commaDelimited } from "@/utils/filters";
+import SwipeableRow from "../swipeableRow";
+import Animated from "react-native-reanimated";
 import Card from "../card";
 import React from "react";
 
 interface TransactionListItemProps {
   transaction: Transaction;
   categoryInfo: Category | undefined;
+  onDelete: () => void;
 }
 
 function TransactionInfo({
@@ -82,6 +85,7 @@ function Amount({
 const TransactionListItem: React.FC<TransactionListItemProps> = ({
   transaction,
   categoryInfo,
+  onDelete,
 }) => {
   const iconName =
     transaction.type === "Expense" ? "minuscircle" : "pluscircle";
@@ -89,27 +93,31 @@ const TransactionListItem: React.FC<TransactionListItemProps> = ({
   const categoryColor = categoryColors[categoryInfo?.name ?? "Default"];
   const emoji = categoryEmojies[categoryInfo?.name ?? "Default"];
   return (
-    <Card>
-      <View style={styles.row}>
-        <View style={{ width: "40%", gap: 3 }}>
-          <Amount
-            amount={transaction.amount}
-            color={color}
-            iconName={iconName}
-          />
-          <CategoryItem
-            categoryColor={categoryColor}
-            categoryInfo={categoryInfo}
-            emoji={emoji}
-          />
-        </View>
-        <TransactionInfo
-          date={transaction.date}
-          description={transaction.description}
-          id={transaction.id}
-        />
-      </View>
-    </Card>
+    <SwipeableRow onDelete={onDelete}>
+      <Animated.View>
+        <Card>
+          <View style={styles.row}>
+            <View style={{ width: "40%", gap: 3 }}>
+              <Amount
+                amount={transaction.amount}
+                color={color}
+                iconName={iconName}
+              />
+              <CategoryItem
+                categoryColor={categoryColor}
+                categoryInfo={categoryInfo}
+                emoji={emoji}
+              />
+            </View>
+            <TransactionInfo
+              date={transaction.date}
+              description={transaction.description}
+              id={transaction.id}
+            />
+          </View>
+        </Card>
+      </Animated.View>
+    </SwipeableRow>
   );
 };
 

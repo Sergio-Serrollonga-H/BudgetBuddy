@@ -5,6 +5,7 @@ import "react-native-reanimated";
 
 import * as FileSystem from "expo-file-system";
 import { Asset } from "expo-asset";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import React, { useState, useEffect } from "react";
 
 const loadDatabase = async () => {
@@ -64,13 +65,15 @@ export default function RootLayout() {
         useSuspense
         assetSource={{ assetId: require("./../assets/test.db") }}
       >
-        <Stack>
-          <Stack.Screen
-            name="index"
-            options={{ headerShown: true, headerTitle: "Budget Buddy" }}
-          />
-          <Stack.Screen name="transactions/[id]" />
-        </Stack>
+        <GestureHandlerRootView>
+          <Stack>
+            <Stack.Screen
+              name="index"
+              options={{ headerShown: true, headerTitle: "Budget Buddy" }}
+            />
+            <Stack.Screen name="transactions/[id]" />
+          </Stack>
+        </GestureHandlerRootView>
       </SQLiteProvider>
     </React.Suspense>
   );

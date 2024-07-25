@@ -1,5 +1,6 @@
 import { TouchableOpacity, View } from "react-native";
 import { Category, Transaction } from "@/types";
+import { router } from "expo-router";
 import TransactionListItem from "./transactionListItem";
 
 export default function TransactionList({
@@ -21,11 +22,12 @@ export default function TransactionList({
           <TouchableOpacity
             key={transaction.id}
             activeOpacity={0.7}
-            onLongPress={() => deleteTransaction(transaction.id)}
+            onLongPress={() => router.push(`/transactions/${transaction.id}`)}
           >
             <TransactionListItem
               transaction={transaction}
               categoryInfo={categoryForCurrentItem}
+              onDelete={() => deleteTransaction(transaction.id)}
             />
           </TouchableOpacity>
         );

@@ -5,21 +5,18 @@ interface CategoryButtonProps {
   id: number;
   title: string;
   isSelected: boolean;
-  setTypeSelected: React.Dispatch<React.SetStateAction<string>>;
-  setCategoryId: React.Dispatch<React.SetStateAction<number>>;
+  setCategoryId: (id: number) => void;
 }
 
 const CategoryButton: React.FC<CategoryButtonProps> = ({
   id,
   title,
   isSelected,
-  setTypeSelected,
   setCategoryId,
 }) => {
   return (
     <TouchableOpacity
       onPress={() => {
-        setTypeSelected(title);
         setCategoryId(id);
       }}
       activeOpacity={0.6}

@@ -78,10 +78,10 @@ const App = () => {
   }
 
   async function deleteTransaction(id: number) {
-    /* db.withTransactionAsync(async () => {
+    db.withTransactionAsync(async () => {
       await db.runAsync(`DELETE FROM Transactions WHERE id = ?;`, [id]);
       await getData();
-    }); */
+    });
   }
 
   return (

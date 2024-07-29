@@ -2,13 +2,11 @@ import { Button, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite/next";
 import { Category, Transaction } from "@/types";
-import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import SegmentedControl from "@react-native-segmented-control/segmented-control";
 import CategoryButton from "@/components/categories/categoryButton";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import DatePicker from "@/components/datePicker";
+import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { insertTransaction, updateTransaction } from "@/utils/Database";
 import { Drawer } from "expo-router/drawer";
 import React, { useEffect, useState, useCallback } from "react";
@@ -107,7 +105,7 @@ const TransactionPage = () => {
     }));
   };
 
-  const showDatepicker = () => {
+  const openDatepicker = () => {
     setShowDatePicker(true);
   };
 
@@ -169,12 +167,11 @@ const TransactionPage = () => {
       />
       <View style={{ padding: 10 }}>
         <TextInput
-          placeholder="$Amount"
+          placeholder="$ Amount"
           style={{ fontSize: 32, marginBottom: 15, fontWeight: "bold" }}
           keyboardType="numeric"
           value={currentTransaction.amount.toString()}
           onChangeText={(text) => {
-            // Remove any non-numeric characters before setting the state
             const numericValue = text.replace(/[^0-9.]/g, "");
             updateAmount(numericValue);
           }}
@@ -185,33 +182,13 @@ const TransactionPage = () => {
           value={currentTransaction.description}
           onChangeText={updateDescription}
         />
-        <View
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-            marginBottom: 14,
-          }}
-        >
-          <TouchableOpacity
-            style={{ marginRight: 20 }}
-            onPress={showDatepicker}
-          >
-            <Ionicons name="calendar-outline" size={24} color={"dark"} />
-          </TouchableOpacity>
-          <Text style={{ fontSize: 24 }}>
-            {datePickerDate && datePickerDate.toDateString()}
-          </Text>
-          {showDatePicker && (
-            <DateTimePicker
-              testID="dateTimePicker"
-              value={datePickerDate}
-              mode={"date"}
-              is24Hour={true}
-              onChange={onChangeDate}
-            />
-          )}
-        </View>
+        <DatePicker
+          showDatePicker={showDatePicker}
+          datePickerDate={datePickerDate}
+          textStyle={{ fontSize: 24 }}
+          openDatepicker={openDatepicker}
+          onChangeDate={onChangeDate}
+        />
         <Text style={{ marginBottom: 6 }}>Select a entry type</Text>
         <SegmentedControl
           values={["Expense", "Income"]}

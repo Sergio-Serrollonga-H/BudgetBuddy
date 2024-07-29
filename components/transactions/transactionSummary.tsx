@@ -4,25 +4,25 @@ import { TransactionsByMonth } from "@/types";
 import { commaDelimited } from "@/utils/filters";
 
 interface TransactionSummaryProps extends TransactionsByMonth {
-  month: number;
-  year: number;
+  startDate: Date;
+  endDate: Date;
 }
 
 function TransactionSummary({
   totalIncome,
   totalExpenses,
-  month,
-  year,
+  startDate,
+  endDate,
 }: TransactionSummaryProps) {
   const savings = totalIncome - totalExpenses;
 
-  const getMonthName = (year: number, month: number) => {
-    const adjustedMonth = month - 1;
-
-    const date = new Date(year, adjustedMonth, 1);
+  const getMonthAndMonthName = (startDate: Date) => {
+    const date = startDate;
 
     const monthName = new Intl.DateTimeFormat("en-US", {
+      day: "numeric",
       month: "long",
+      year: "numeric",
     }).format(date);
 
     return monthName;
@@ -42,8 +42,9 @@ function TransactionSummary({
   return (
     <>
       <Card style={styles.container}>
-        <Text style={styles.periodTitle}>
-          Summary for {getMonthName(year, month)}
+        <Text style={styles.periodTitle}>Summary</Text>
+        <Text style={styles.periodDate}>
+          {getMonthAndMonthName(startDate)} to {getMonthAndMonthName(endDate)}
         </Text>
         <Text style={styles.summaryText}>
           Income:{" "}
@@ -80,6 +81,13 @@ const styles = StyleSheet.create({
 
   periodTitle: {
     fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 15,
+  },
+
+  periodDate: {
+    fontSize: 16,
     fontWeight: "bold",
     color: "#333",
     marginBottom: 15,

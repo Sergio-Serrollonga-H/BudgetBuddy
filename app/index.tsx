@@ -1,4 +1,10 @@
-import { ScrollView, Platform } from "react-native";
+import {
+  ScrollView,
+  Platform,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Category, Transaction } from "@/types";
 import { useSQLiteContext } from "expo-sqlite";
 import { router } from "expo-router";
@@ -6,13 +12,23 @@ import TransactionList from "@/components/transactions/transactionsList";
 import AddTransaction from "@/components/addEntry";
 import TransactionSummary from "@/components/transactions/transactionSummary";
 import { TransactionsByMonth } from "@/types";
-import React, { useState, useEffect, useCallback } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { deleteTransactionById } from "@/utils/Database";
+import DatePicker from "@/components/datePicker";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
+import React, { useState, useEffect, useCallback } from "react";
 
 const App = () => {
-  const [year, setYear] = useState<number>(2024);
-  const [month, setMonth] = useState<number>(7);
+  const [datePickerStartDate, setDatePickerStartDate] = useState<Date>(
+    new Date()
+  );
+  const [datePickerEndDate, setDatePickerEndDate] = useState<Date>(new Date());
+  const [showStartDatePicker, setShowStartDatePicker] =
+    useState<Boolean>(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState<Boolean>(false);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -26,15 +42,13 @@ const App = () => {
 
   useFocusEffect(
     useCallback(() => {
-      const currentDate = new Date();
-      const currentYear = currentDate.getFullYear();
-      const currentMonth = currentDate.getMonth() + 1;
-
-      setYear(currentYear);
-      setMonth(currentMonth);
-      getData();
+      initCurrentDate();
     }, [])
   );
+
+  useEffect(() => {
+    getData();
+  }, [datePickerStartDate, datePickerEndDate]);
 
   useEffect(() => {
     db.withTransactionAsync(async () => {
@@ -42,20 +56,48 @@ const App = () => {
     });
   }, [db]);
 
-  const getMonthStartEnd = (year: number, month: number) => {
-    const adjustedMonth = month - 1;
-    const startDate = new Date(year, adjustedMonth, 1);
-    const endDate = new Date(year, adjustedMonth + 1, 0);
+  const initCurrentDate = () => {
+    const currentDate = new Date();
+    const [month, year] = [currentDate.getMonth(), currentDate.getFullYear()];
 
-    return { startDate, endDate };
+    setDatePickerStartDate(new Date(year, month, 1));
+    setDatePickerEndDate(new Date(year, month + 1, 0));
+  };
+
+  const openStartDatePicker = () => {
+    setShowStartDatePicker(true);
+  };
+
+  const openEndDatePicker = () => {
+    setShowEndDatePicker(true);
+  };
+
+  const onChangeStartDate = (
+    event: DateTimePickerEvent,
+    selectedDate?: Date
+  ) => {
+    setShowStartDatePicker(false);
+    if (selectedDate) {
+      const currentDate = selectedDate;
+      setDatePickerStartDate(currentDate);
+    }
+  };
+
+  const onChangeEndDate = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowEndDatePicker(false);
+    if (selectedDate) {
+      const currentDate = selectedDate;
+      setDatePickerEndDate(currentDate);
+    }
   };
 
   async function getData() {
-    const { startDate, endDate } = getMonthStartEnd(year, month);
-    console.log(startDate, endDate, "bye");
-
     const transactionsResult = await db.getAllAsync<Transaction>(
-      `SELECT * from Transactions ORDER BY date DESC Limit 10;`
+      `SELECT * from Transactions WHERE date >= ? AND date <= ? ORDER BY date DESC Limit 30;`,
+      [
+        Math.floor(datePickerStartDate.getTime()),
+        Math.floor(datePickerEndDate.getTime()),
+      ]
     );
 
     setTransactions(transactionsResult);
@@ -74,8 +116,13 @@ const App = () => {
       FROM Transactions
       WHERE date >= ? AND date <= ?;
     `,
-      [Math.floor(startDate.getTime()), Math.floor(endDate.getTime())]
+      [
+        Math.floor(datePickerStartDate.getTime()),
+        Math.floor(datePickerEndDate.getTime()),
+      ]
     );
+
+    console.log(transactionsByMonth);
     setTransactionsByMonth(transactionsByMonth[0]);
   }
 
@@ -95,9 +142,32 @@ const App = () => {
         <TransactionSummary
           totalExpenses={transactionsByMonth.totalExpenses}
           totalIncome={transactionsByMonth.totalIncome}
-          year={year}
-          month={month}
+          startDate={datePickerStartDate}
+          endDate={datePickerEndDate}
         />
+        <View
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <DatePicker
+            showDatePicker={showStartDatePicker}
+            datePickerDate={datePickerStartDate}
+            textStyle={{ fontSize: 14 }}
+            openDatepicker={openStartDatePicker}
+            onChangeDate={onChangeStartDate}
+          />
+          <DatePicker
+            showDatePicker={showEndDatePicker}
+            datePickerDate={datePickerEndDate}
+            textStyle={{ fontSize: 14 }}
+            openDatepicker={openEndDatePicker}
+            onChangeDate={onChangeEndDate}
+          />
+        </View>
         <AddTransaction
           onAddEntry={() => router.push(`/(transactions)/${null}`)}
         />

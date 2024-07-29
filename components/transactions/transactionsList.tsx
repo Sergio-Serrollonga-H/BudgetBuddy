@@ -30,6 +30,7 @@ export default function TransactionList({
                   description: transaction.description,
                   amount: transaction.amount,
                   type: transaction.type,
+                  date: transaction.date,
                 },
               });
             }}

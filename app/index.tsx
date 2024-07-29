@@ -1,10 +1,4 @@
-import {
-  ScrollView,
-  Platform,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, Platform, View } from "react-native";
 import { Category, Transaction } from "@/types";
 import { useSQLiteContext } from "expo-sqlite";
 import { router } from "expo-router";
@@ -12,13 +6,10 @@ import TransactionList from "@/components/transactions/transactionsList";
 import AddTransaction from "@/components/addEntry";
 import TransactionSummary from "@/components/transactions/transactionSummary";
 import { TransactionsByMonth } from "@/types";
-import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { deleteTransactionById } from "@/utils/Database";
 import DatePicker from "@/components/datePicker";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import React, { useState, useEffect, useCallback } from "react";
 
 const App = () => {

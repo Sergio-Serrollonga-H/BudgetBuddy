@@ -1,11 +1,13 @@
 import { Button, Text, TextInput, View } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite/next";
 import { Category, Transaction } from "@/types";
 import { router } from "expo-router";
 import SegmentedControl from "@react-native-segmented-control/segmented-control";
 import CategoryButton from "@/components/categories/categoryButton";
-import React, { useEffect, useState } from "react";
+import { insertTransaction, updateTransaction } from "@/utils/Database";
+import React, { useEffect, useState, useCallback } from "react";
+import { Drawer } from "expo-router/drawer";
 
 type TransactionWithOptionalIDAndStringAmount = Partial<
   Pick<Transaction, "id">
@@ -13,7 +15,14 @@ type TransactionWithOptionalIDAndStringAmount = Partial<
   Omit<Transaction, "id" | "amount"> & { amount: string };
 
 const TransactionPage = () => {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, categoryId, description, amount, type } = useLocalSearchParams<{
+    id: string;
+    categoryId: string;
+    description: string;
+    amount: string;
+    type: string;
+  }>();
+
   const [currentTab, setCurrentTab] = useState<number>(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [currentTransaction, setCurrentTransaction] =
@@ -27,11 +36,25 @@ const TransactionPage = () => {
 
   const db = useSQLiteContext();
 
-  useEffect(() => {
-    if (id !== "null") {
-      getTransaction(Number(id));
-    }
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      setCurrentTransaction({
+        category_id: Number(categoryId),
+        amount: amount || "",
+        date: new Date().getTime(),
+        description: description || "",
+        type: (type as "Expense" | "Income") || "Expense",
+      });
+
+      if (type === "Income") {
+        setCurrentTab(1);
+      } else {
+        setCurrentTab(0);
+      }
+
+      getExpenseType(currentTab);
+    }, [id, categoryId, description, amount, type])
+  );
 
   useEffect(() => {
     getExpenseType(currentTab);
@@ -76,92 +99,39 @@ const TransactionPage = () => {
     setCategories(result);
   }
 
-  async function getTransaction(id: number) {
-    const result = await db.getFirstAsync<Transaction>(
-      `SELECT * FROM Transactions WHERE id = ?;`,
-      [id]
-    );
-
-    if (result) {
-      updateAmount(result.amount.toString());
-      updateDescription(result.description);
-      updateCategoryId(result.category_id);
-      updateType(result.type);
-      if (result.type === "Income") {
-        setCurrentTab(1);
-      }
-    }
-  }
-
-  async function insertTransaction(
-    transaction: Omit<Transaction, "id">,
-    transactionId?: string
-  ) {
-    db.withTransactionAsync(async () => {
+  async function handleSave(transactionId?: string) {
+    try {
       if (transactionId !== "null") {
-        // Update existing transaction
-        await db.runAsync(
-          `
-        UPDATE Transactions
-        SET category_id = ?, amount = ?, date = ?, description = ?, type = ?
-        WHERE id = ?;
-      `,
-          [
-            transaction.category_id,
-            transaction.amount,
-            transaction.date,
-            transaction.description,
-            transaction.type,
-            Number(transactionId),
-          ]
+        await updateTransaction(
+          db,
+          {
+            amount: Number(currentTransaction.amount),
+            description: currentTransaction.description,
+            category_id: currentTransaction.category_id,
+            date: new Date().getTime(),
+            type: currentTransaction.type as "Expense" | "Income",
+          },
+          Number(transactionId)
         );
       } else {
-        // Insert new transaction
-        await db.runAsync(
-          `
-        INSERT INTO Transactions (category_id, amount, date, description, type) VALUES (?, ?, ?, ?, ?);
-      `,
-          [
-            transaction.category_id,
-            transaction.amount,
-            transaction.date,
-            transaction.description,
-            transaction.type,
-          ]
-        );
+        await insertTransaction(db, {
+          amount: Number(currentTransaction.amount),
+          description: currentTransaction.description,
+          category_id: currentTransaction.category_id,
+          date: new Date().getTime(),
+          type: currentTransaction.type as "Expense" | "Income",
+        });
       }
 
       router.back();
-    });
-  }
-
-  async function handleSave(transactionId?: string) {
-    console.log(
-      {
-        amount: Number(currentTransaction.amount),
-        description: currentTransaction.description,
-        category_id: currentTransaction.category_id,
-        date: new Date().getTime(),
-        type: currentTransaction.type as "Expense" | "Income",
-      },
-      transactionId
-    );
-
-    await insertTransaction(
-      {
-        amount: Number(currentTransaction.amount),
-        description: currentTransaction.description,
-        category_id: currentTransaction.category_id,
-        date: new Date().getTime(),
-        type: currentTransaction.type as "Expense" | "Income",
-      },
-      transactionId
-    );
+    } catch (error) {
+      console.error("Error saving transaction:", error);
+    }
   }
 
   return (
     <View>
-      <Stack.Screen
+      <Drawer.Screen
         options={{
           title: `${id !== "null" ? "Edit" : "Create"} Transaction`,
         }}
@@ -212,7 +182,11 @@ const TransactionPage = () => {
         }}
       >
         <Button title="Cancel" color="red" onPress={router.back} />
-        <Button title="Save" onPress={() => handleSave(id)} />
+        <Button
+          title="Save"
+          disabled={!currentTransaction.category_id}
+          onPress={() => handleSave(id)}
+        />
       </View>
     </View>
   );

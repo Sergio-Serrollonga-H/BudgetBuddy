@@ -1,6 +1,5 @@
 import { Text, View, StyleSheet } from "react-native";
 import { Category, Transaction } from "@/types";
-import { categoryColors, categoryEmojies } from "@/constants";
 import { AutoSizeText, ResizeTextMode } from "react-native-auto-size-text";
 import { AntDesign } from "@expo/vector-icons";
 import { commaDelimited } from "@/utils/filters";
@@ -38,11 +37,9 @@ function TransactionInfo({
 function CategoryItem({
   categoryColor,
   categoryInfo,
-  emoji,
 }: {
   categoryColor: string;
   categoryInfo: Category | undefined;
-  emoji: string;
 }) {
   return (
     <View
@@ -51,9 +48,7 @@ function CategoryItem({
         { backgroundColor: categoryColor + "40" },
       ]}
     >
-      <Text style={styles.categoryText}>
-        {emoji} {categoryInfo?.name}
-      </Text>
+      <Text style={styles.categoryText}>{categoryInfo?.name}</Text>
     </View>
   );
 }
@@ -90,10 +85,9 @@ const TransactionListItem: React.FC<TransactionListItemProps> = ({
   const iconName =
     transaction.type === "Expense" ? "minuscircle" : "pluscircle";
   const color = transaction.type === "Expense" ? "red" : "green";
-  const categoryColor = categoryColors[categoryInfo?.name ?? "Default"];
-  const emoji = categoryEmojies[categoryInfo?.name ?? "Default"];
+  const categoryColor = categoryInfo?.color ?? "#D3D3D3";
   return (
-    <SwipeableRow onDelete={onDelete}>
+    <SwipeableRow style={{ elevation: 8 }} onDelete={onDelete}>
       <Animated.View>
         <Card>
           <View style={styles.row}>
@@ -103,11 +97,12 @@ const TransactionListItem: React.FC<TransactionListItemProps> = ({
                 color={color}
                 iconName={iconName}
               />
-              <CategoryItem
-                categoryColor={categoryColor}
-                categoryInfo={categoryInfo}
-                emoji={emoji}
-              />
+              {categoryInfo && (
+                <CategoryItem
+                  categoryColor={categoryColor}
+                  categoryInfo={categoryInfo}
+                />
+              )}
             </View>
             <TransactionInfo
               date={transaction.date}
@@ -132,7 +127,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   categoryContainer: {
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 3,
     alignSelf: "flex-start",

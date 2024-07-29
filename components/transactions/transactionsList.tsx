@@ -22,7 +22,17 @@ export default function TransactionList({
           <TouchableOpacity
             key={transaction.id}
             activeOpacity={0.7}
-            onLongPress={() => router.push(`/transactions/${transaction.id}`)}
+            onLongPress={() => {
+              router.push({
+                pathname: `/(transactions)/${transaction.id}`,
+                params: {
+                  categoryId: transaction.category_id,
+                  description: transaction.description,
+                  amount: transaction.amount,
+                  type: transaction.type,
+                },
+              });
+            }}
           >
             <TransactionListItem
               transaction={transaction}

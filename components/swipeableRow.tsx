@@ -1,5 +1,12 @@
 import React, { Component } from "react";
-import { Animated, StyleSheet, Text, View, I18nManager } from "react-native";
+import {
+  Animated,
+  StyleSheet,
+  Text,
+  View,
+  I18nManager,
+  ViewStyle,
+} from "react-native";
 import * as Haptics from "expo-haptics";
 
 import { RectButton, Swipeable } from "react-native-gesture-handler";
@@ -7,6 +14,7 @@ import { RectButton, Swipeable } from "react-native-gesture-handler";
 type SwipeableRowProps = {
   children: React.ReactNode;
   onDelete: () => void;
+  style?: ViewStyle;
 };
 
 export default class SwipeableRow extends Component<SwipeableRowProps> {
@@ -66,28 +74,21 @@ export default class SwipeableRow extends Component<SwipeableRowProps> {
     this.swipeableRow?.close();
   };
   render() {
-    const { children } = this.props;
+    const { children, style } = this.props;
     return (
       <Swipeable
         containerStyle={{
           borderRadius: 15,
-          elevation: 8,
           shadowColor: "#000",
           shadowRadius: 8,
           shadowOffset: { height: 6, width: 0 },
-          shadowOpacity: 0.15,
+          ...style,
         }}
         ref={this.updateRef}
         friction={2}
         enableTrackpadTwoFingerGesture
         rightThreshold={40}
         renderRightActions={this.renderRightActions}
-        onSwipeableOpen={(direction) => {
-          console.log(`Opening swipeable from the ${direction}`);
-        }}
-        onSwipeableClose={(direction) => {
-          console.log(`Closing swipeable to the ${direction}`);
-        }}
       >
         {children}
       </Swipeable>

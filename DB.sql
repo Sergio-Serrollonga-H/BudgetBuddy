@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS Categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   type TEXT NOT NULL CHECK (type IN ('Expense', 'Income'))
+  color Text,
 );
 
 CREATE TABLE IF NOT EXISTS Transactions (

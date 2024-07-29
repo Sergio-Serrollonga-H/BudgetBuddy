@@ -1,57 +1,13 @@
-import { Stack } from "expo-router";
-import { View, Text } from "react-native";
-import { SQLiteProvider } from "expo-sqlite";
 import "react-native-reanimated";
+import { View, Text } from "react-native";
+import { Drawer } from "expo-router/drawer";
+import { SQLiteProvider } from "expo-sqlite";
+import { migrateDbIfNeeded } from "@/utils/Database";
 
-import * as FileSystem from "expo-file-system";
-import { Asset } from "expo-asset";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import React, { useState, useEffect } from "react";
-
-const loadDatabase = async () => {
-  const dbName = "test.db";
-  const dbAsset = require("./../assets/test.db");
-  const dbUri = Asset.fromModule(dbAsset).uri;
-  const dbFilePath = `${FileSystem.documentDirectory}SQLite/${dbName}`;
-
-  try {
-    const fileInfo = await FileSystem.getInfoAsync(dbFilePath);
-
-    /*     if (fileInfo.exists) {
-      await FileSystem.deleteAsync(dbFilePath);
-    } */
-
-    if (!fileInfo.exists) {
-      await FileSystem.makeDirectoryAsync(
-        `${FileSystem.documentDirectory}SQLite/`,
-        { intermediates: true }
-      );
-      await FileSystem.downloadAsync(dbUri, dbFilePath);
-    }
-  } catch (err) {
-    console.error(err);
-  }
-};
+import React from "react";
 
 export default function RootLayout() {
-  const [dbLoaded, setDbLoaded] = useState<boolean>(false);
-
-  useEffect(() => {
-    loadDatabase()
-      .then(() => {
-        setDbLoaded(true);
-        console.log("DB loaded");
-      })
-      .catch((e) => console.error(e));
-  }, []);
-
-  if (!dbLoaded)
-    return (
-      <View style={{ flex: 1 }}>
-        <Text>Loading Database...</Text>
-      </View>
-    );
-
   return (
     <React.Suspense
       fallback={
@@ -62,17 +18,29 @@ export default function RootLayout() {
     >
       <SQLiteProvider
         databaseName="test.db"
+        onInit={migrateDbIfNeeded}
         useSuspense
-        assetSource={{ assetId: require("./../assets/test.db") }}
       >
-        <GestureHandlerRootView>
-          <Stack>
-            <Stack.Screen
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <Drawer>
+            <Drawer.Screen
               name="index"
-              options={{ headerShown: true, headerTitle: "Budget Buddy" }}
+              options={{ drawerLabel: "Home", headerTitle: "Budget Buddy" }}
             />
-            <Stack.Screen name="transactions/[id]" />
-          </Stack>
+            <Drawer.Screen
+              name="(transactions)/[id]"
+              options={{
+                drawerItemStyle: { display: "none" },
+              }}
+            />
+            <Drawer.Screen
+              name="(categories)"
+              options={{
+                drawerLabel: "Categories",
+                headerShown: false,
+              }}
+            />
+          </Drawer>
         </GestureHandlerRootView>
       </SQLiteProvider>
     </React.Suspense>

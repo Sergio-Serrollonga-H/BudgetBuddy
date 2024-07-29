@@ -1,26 +1,15 @@
 import * as React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
 
-export default function AddTransaction() {
-  return (
-    <View style={{ marginBottom: 15 }}>
-      <AddButton
-        setIsAddingTransaction={() => router.push(`transactions/${null}`)}
-      />
-    </View>
-  );
+interface AddEntryProps {
+  onAddEntry: () => void;
 }
 
-function AddButton({
-  setIsAddingTransaction,
-}: {
-  setIsAddingTransaction: React.Dispatch<React.SetStateAction<boolean>>;
-}) {
+function AddButton({ onAddEntry }: { onAddEntry: () => void }) {
   return (
     <TouchableOpacity
-      onPress={() => setIsAddingTransaction(true)}
+      onPress={() => onAddEntry()}
       activeOpacity={0.6}
       style={{
         height: 40,
@@ -39,3 +28,13 @@ function AddButton({
     </TouchableOpacity>
   );
 }
+
+const AddEntry: React.FC<AddEntryProps> = ({ onAddEntry }) => {
+  return (
+    <View style={{ marginBottom: 15 }}>
+      <AddButton onAddEntry={onAddEntry} />
+    </View>
+  );
+};
+
+export default AddEntry;

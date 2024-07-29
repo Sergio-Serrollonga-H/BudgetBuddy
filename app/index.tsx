@@ -1,12 +1,14 @@
-import { StyleSheet, ScrollView, Platform } from "react-native";
+import { ScrollView, Platform } from "react-native";
 import { Category, Transaction } from "@/types";
 import { useSQLiteContext } from "expo-sqlite";
+import { router } from "expo-router";
 import TransactionList from "@/components/transactions/transactionsList";
-import AddTransaction from "@/components/transactions/addTransaction";
+import AddTransaction from "@/components/addEntry";
 import TransactionSummary from "@/components/transactions/transactionSummary";
 import { TransactionsByMonth } from "@/types";
 import React, { useState, useEffect, useCallback } from "react";
 import { useFocusEffect } from "expo-router";
+import { deleteTransactionById } from "@/utils/Database";
 
 const App = () => {
   const [year, setYear] = useState<number>(2024);
@@ -50,7 +52,7 @@ const App = () => {
 
   async function getData() {
     const { startDate, endDate } = getMonthStartEnd(year, month);
-    console.log(startDate, endDate, "hello");
+    console.log(startDate, endDate, "bye");
 
     const transactionsResult = await db.getAllAsync<Transaction>(
       `SELECT * from Transactions ORDER BY date DESC Limit 10;`
@@ -78,10 +80,8 @@ const App = () => {
   }
 
   async function deleteTransaction(id: number) {
-    db.withTransactionAsync(async () => {
-      await db.runAsync(`DELETE FROM Transactions WHERE id = ?;`, [id]);
-      await getData();
-    });
+    await deleteTransactionById(db, id);
+    await getData();
   }
 
   return (
@@ -98,7 +98,9 @@ const App = () => {
           year={year}
           month={month}
         />
-        <AddTransaction />
+        <AddTransaction
+          onAddEntry={() => router.push(`/(transactions)/${null}`)}
+        />
         <TransactionList
           categories={categories}
           transactions={transactions}
@@ -108,12 +110,5 @@ const App = () => {
     </>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 15,
-    paddingVertical: 170,
-  },
-});
 
 export default App;

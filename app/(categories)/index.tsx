@@ -7,8 +7,8 @@ import SegmentedControl from "@react-native-segmented-control/segmented-control"
 import CategoryEditableButton from "@/components/categories/categoryEditableButton";
 import SwipeableRow from "@/components/swipeableRow";
 import Animated from "react-native-reanimated";
-import { deleteCategory } from "@/utils/Database";
-import React, { useEffect, useState, useCallback } from "react";
+import { getCategories, deleteCategory } from "@/utils/Database";
+import React, { useState, useCallback } from "react";
 
 const Categories = () => {
   const [currentTab, setCurrentTab] = useState<number>(0);
@@ -17,23 +17,20 @@ const Categories = () => {
 
   useFocusEffect(
     useCallback(() => {
-      getCategories(currentTab);
+      fetchCategories(currentTab);
     }, [currentTab])
   );
 
-  async function getCategories(currentTab: number) {
+  async function fetchCategories(currentTab: number) {
     const type = currentTab === 0 ? "Expense" : "Income";
 
-    const result = await db.getAllAsync<Category>(
-      `SELECT * FROM Categories WHERE type = ?;`,
-      [type]
-    );
+    const result = await getCategories(db, type);
     setCategories(result);
   }
 
   async function removeCategoy(id: number) {
     await deleteCategory(db, id);
-    getCategories(currentTab);
+    fetchCategories(currentTab);
   }
 
   return (

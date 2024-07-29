@@ -1,5 +1,5 @@
 import { type SQLiteDatabase } from "expo-sqlite";
-import { Category, Transaction } from "@/types";
+import { Category, Transaction, TransactionsSummary } from "@/types";
 import * as FileSystem from "expo-file-system";
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
@@ -56,6 +56,58 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
 }
 
 //Transactions
+export async function getTransactions(
+  db: SQLiteDatabase,
+  startDate: Date,
+  endDate: Date,
+  categoryId: number | null
+) {
+  let baseQuery = `SELECT * from Transactions WHERE date >= ? AND date <= ?`;
+  const queryParams = [
+    Math.floor(startDate.getTime()),
+    Math.floor(endDate.getTime()),
+  ];
+
+  const fullQuery = categoryId
+    ? `${baseQuery} AND category_id = ? ORDER BY date DESC Limit 30;`
+    : `${baseQuery} ORDER BY date DESC Limit 30;`;
+
+  if (categoryId) {
+    queryParams.push(categoryId);
+  }
+
+  return await db.getAllAsync<Transaction>(fullQuery, queryParams);
+}
+
+export async function getTransactionsSummary(
+  db: SQLiteDatabase,
+  startDate: Date,
+  endDate: Date,
+  categoryId: number | null
+) {
+  let baseQuery = `
+    SELECT
+      COALESCE(SUM(CASE WHEN type = 'Expense' THEN amount ELSE 0 END), 0) AS totalExpenses,
+      COALESCE(SUM(CASE WHEN type = 'Income' THEN amount ELSE 0 END), 0) AS totalIncome
+    FROM Transactions
+    WHERE date >= ? AND date <= ?
+  `;
+
+  const queryParams = [
+    Math.floor(startDate.getTime()),
+    Math.floor(endDate.getTime()),
+  ];
+
+  const fullQuery = categoryId
+    ? `${baseQuery} AND category_id = ?;`
+    : `${baseQuery};`;
+
+  if (categoryId) {
+    queryParams.push(categoryId);
+  }
+
+  return await db.getAllAsync<TransactionsSummary>(fullQuery, queryParams);
+}
 
 export async function insertTransaction(
   db: SQLiteDatabase,
@@ -102,6 +154,23 @@ export async function deleteTransactionById(db: SQLiteDatabase, id: number) {
 }
 
 //Categories
+
+export async function getCategories(
+  db: SQLiteDatabase,
+  type?: "Expense" | "Income"
+) {
+  let baseQuery = "SELECT * from Categories";
+
+  const queryParams: ("Expense" | "Income")[] = [];
+
+  const fullQuery = type ? `${baseQuery} WHERE type = ?;` : `${baseQuery};`;
+
+  if (type) {
+    queryParams.push(type);
+  }
+
+  return await db.getAllAsync<Category>(fullQuery, queryParams);
+}
 
 export async function insertCategory(
   db: SQLiteDatabase,

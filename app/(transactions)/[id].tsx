@@ -9,6 +9,7 @@ import DatePicker from "@/components/datePicker";
 import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { insertTransaction, updateTransaction } from "@/utils/Database";
 import { Drawer } from "expo-router/drawer";
+import { getCategories } from "@/utils/Database";
 import React, { useEffect, useState, useCallback } from "react";
 
 type TransactionWithOptionalIDAndStringAmount = Partial<
@@ -121,10 +122,7 @@ const TransactionPage = () => {
     updateType(currentTab === 0 ? "Expense" : "Income");
     const type = currentTab === 0 ? "Expense" : "Income";
 
-    const result = await db.getAllAsync<Category>(
-      `SELECT * FROM Categories WHERE type = ?;`,
-      [type]
-    );
+    const result = await getCategories(db, type);
     setCategories(result);
   }
 

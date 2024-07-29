@@ -14,7 +14,7 @@ export interface Category {
   color: string | null;
 }
 
-export interface TransactionsByMonth {
+export interface TransactionsSummary {
   totalExpenses: number;
   totalIncome: number;
 }

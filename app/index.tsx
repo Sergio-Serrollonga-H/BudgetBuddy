@@ -5,11 +5,17 @@ import { router } from "expo-router";
 import TransactionList from "@/components/transactions/transactionsList";
 import AddTransaction from "@/components/addEntry";
 import TransactionSummary from "@/components/transactions/transactionSummary";
-import { TransactionsByMonth } from "@/types";
+import { TransactionsSummary } from "@/types";
 import { useFocusEffect } from "expo-router";
-import { deleteTransactionById } from "@/utils/Database";
+import {
+  getCategories,
+  getTransactions,
+  getTransactionsSummary,
+  deleteTransactionById,
+} from "@/utils/Database";
 import DatePicker from "@/components/datePicker";
 import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { Picker } from "@react-native-picker/picker";
 import React, { useState, useEffect, useCallback } from "react";
 
 const App = () => {
@@ -20,11 +26,11 @@ const App = () => {
   const [showStartDatePicker, setShowStartDatePicker] =
     useState<Boolean>(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState<Boolean>(false);
-
   const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [transactionsByMonth, setTransactionsByMonth] =
-    useState<TransactionsByMonth>({
+    useState<TransactionsSummary>({
       totalExpenses: 0,
       totalIncome: 0,
     });
@@ -39,13 +45,7 @@ const App = () => {
 
   useEffect(() => {
     getData();
-  }, [datePickerStartDate, datePickerEndDate]);
-
-  useEffect(() => {
-    db.withTransactionAsync(async () => {
-      await getData();
-    });
-  }, [db]);
+  }, [datePickerStartDate, datePickerEndDate, selectedCategory]);
 
   const initCurrentDate = () => {
     const currentDate = new Date();
@@ -69,58 +69,44 @@ const App = () => {
   ) => {
     setShowStartDatePicker(false);
     if (selectedDate) {
-      const currentDate = selectedDate;
-      setDatePickerStartDate(currentDate);
+      setDatePickerStartDate(selectedDate);
     }
   };
 
   const onChangeEndDate = (event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowEndDatePicker(false);
     if (selectedDate) {
-      const currentDate = selectedDate;
-      setDatePickerEndDate(currentDate);
+      setDatePickerEndDate(selectedDate);
     }
   };
 
-  async function getData() {
-    const transactionsResult = await db.getAllAsync<Transaction>(
-      `SELECT * from Transactions WHERE date >= ? AND date <= ? ORDER BY date DESC Limit 30;`,
-      [
-        Math.floor(datePickerStartDate.getTime()),
-        Math.floor(datePickerEndDate.getTime()),
-      ]
+  const getData = useCallback(async () => {
+    const transactionsResult = await getTransactions(
+      db,
+      datePickerStartDate,
+      datePickerEndDate,
+      selectedCategory
     );
 
     setTransactions(transactionsResult);
 
-    const categoriesResult = await db.getAllAsync<Category>(
-      "SELECT * from Categories;"
-    );
-
+    const categoriesResult = await getCategories(db);
     setCategories(categoriesResult);
 
-    const transactionsByMonth = await db.getAllAsync<TransactionsByMonth>(
-      `
-      SELECT
-        COALESCE(SUM(CASE WHEN type = 'Expense' THEN amount ELSE 0 END), 0) AS totalExpenses,
-        COALESCE(SUM(CASE WHEN type = 'Income' THEN amount ELSE 0 END), 0) AS totalIncome
-      FROM Transactions
-      WHERE date >= ? AND date <= ?;
-    `,
-      [
-        Math.floor(datePickerStartDate.getTime()),
-        Math.floor(datePickerEndDate.getTime()),
-      ]
+    const transactionsByMonth = await getTransactionsSummary(
+      db,
+      datePickerStartDate,
+      datePickerEndDate,
+      selectedCategory
     );
 
-    console.log(transactionsByMonth);
     setTransactionsByMonth(transactionsByMonth[0]);
-  }
+  }, [datePickerStartDate, datePickerEndDate, selectedCategory, db]);
 
-  async function deleteTransaction(id: number) {
+  const deleteTransaction = async (id: number) => {
     await deleteTransactionById(db, id);
     await getData();
-  }
+  };
 
   return (
     <>
@@ -158,6 +144,17 @@ const App = () => {
             openDatepicker={openEndDatePicker}
             onChangeDate={onChangeEndDate}
           />
+        </View>
+        <View>
+          <Picker
+            selectedValue={selectedCategory}
+            onValueChange={(itemValue) => setSelectedCategory(itemValue)}
+          >
+            <Picker.Item label="All Categories" value={null} />
+            {categories.map(({ id, name }) => {
+              return <Picker.Item key={id} label={name} value={id} />;
+            })}
+          </Picker>
         </View>
         <AddTransaction
           onAddEntry={() => router.push(`/(transactions)/${null}`)}

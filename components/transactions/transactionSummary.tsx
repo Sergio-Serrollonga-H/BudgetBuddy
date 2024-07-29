@@ -1,9 +1,9 @@
 import { View, Text, TextStyle, StyleSheet } from "react-native";
 import Card from "../card";
-import { TransactionsByMonth } from "@/types";
+import { TransactionsSummary } from "@/types";
 import { commaDelimited } from "@/utils/filters";
 
-interface TransactionSummaryProps extends TransactionsByMonth {
+interface TransactionSummaryProps extends TransactionsSummary {
   startDate: Date;
   endDate: Date;
 }

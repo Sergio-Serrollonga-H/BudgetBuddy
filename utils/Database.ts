@@ -44,14 +44,6 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
     currentDbVersion = 1;
   }
 
-  if (currentDbVersion === 1) {
-    console.log("Updating Db to version 2 ...");
-    await db.execAsync(`
-        ALTER TABLE Categories ADD COLUMN color TEXT;
-    `);
-    currentDbVersion = 2;
-  }
-
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
 }
 

@@ -4,6 +4,7 @@ import React from "react";
 interface CategoryButtonProps {
   id: number;
   title: string;
+  color: string | null;
   isSelected: boolean;
   setCategoryId: (id: number) => void;
 }
@@ -11,6 +12,7 @@ interface CategoryButtonProps {
 const CategoryButton: React.FC<CategoryButtonProps> = ({
   id,
   title,
+  color,
   isSelected,
   setCategoryId,
 }) => {
@@ -25,7 +27,7 @@ const CategoryButton: React.FC<CategoryButtonProps> = ({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: isSelected ? "#007BFF20" : "#00000020",
+        backgroundColor: isSelected ? "#007BFF20" : color ?? "#00000020",
         borderRadius: 15,
         marginBottom: 6,
       }}

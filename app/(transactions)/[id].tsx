@@ -169,6 +169,7 @@ const TransactionPage = () => {
             // @ts-ignore
             id={cat.id}
             title={cat.name}
+            color={cat.color}
             isSelected={currentTransaction.category_id === cat.id}
             setCategoryId={updateCategoryId}
           />

@@ -17,7 +17,7 @@ const CategoryEditableButton: React.FC<CategoryEditableButtonProps> = ({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#00000020",
+        backgroundColor: category.color ?? "#00000020",
         borderRadius: 15,
       }}
       onLongPress={() =>
